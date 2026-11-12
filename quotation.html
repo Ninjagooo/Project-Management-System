@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My Quotations · Southworks (Trinity)</title>
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body>
+    <main>
+      <header class="top">
+        <h1>My Quotations</h1>
+        <span class="chip" id="who"></span>
+      </header>
+      <div id="list"></div>
+    </main>
+    <script src="js/app.js"></script>
+    <script>
+      (function () {
+        const u = SW.need("customer"),
+          $ = SW.$;
+        function render() {
+          const db = SW.db(),
+            qs = db.quotations.filter((q) => q.userId === u.id).reverse();
+          if (!qs.length) {
+            $("list").innerHTML =
+              '<section class="card empty"><h3>No quotations yet</h3><p>Design a product in 3D, then request a quotation.</p><a class="btn" href="customize.html">Open 3D Customizer</a></section>';
+            return;
+          }
+          $("list").innerHTML = qs
+            .map((q) => {
+              const pre = !q.verified,
+                can = q.status === "Awaiting approval";
+              const proj = q.projectId
+                ? db.projects.find((p) => p.id === q.projectId)
+                : null;
+              let act = "";
+              if (can)
+                act += `<button class="btn" data-a="ok" data-id="${q.id}">Approve quotation</button><button class="btn ghost" data-a="red" data-id="${q.id}">Request price reduction</button>`;
+              if (q.status !== "Approved")
+                act += `<a class="btn ghost" href="customize.html?edit=${q.id}">Change design</a>`;
+              if (q.status === "Approved")
+                act += proj
+                  ? `<a class="btn" href="status.html">Track project</a>`
+                  : '<span class="muted">Waiting for the owner to set the deadline.</span>';
+              const note =
+                {
+                  "Pending measurement":
+                    "Our employee will verify the measurements first. The amounts below are a preliminary estimate.",
+                  "Reduction requested":
+                    "Your price reduction request was sent to the owner.",
+                }[q.status] || "";
+              return `<section class="card" id="${q.id}">
+        <div class="between"><div><h3>Quotation #${q.id}</h3><p class="muted">${SW.esc(SW.specText(q.spec))}</p></div>${SW.chip(q.status)}</div>
+        ${note ? `<p class="muted">${note}</p>` : ""}
+        ${pre ? "" : ""}${SW.breakdown(q)}
+        <div class="actions">${act}</div>
+        <h4>History</h4><ul class="tl">${q.log
+          .slice()
+          .reverse()
+          .map(
+            (l) =>
+              `<li>${SW.esc(l.text)}<small>${SW.fdate(l.d)}${l.by ? " · " + SW.esc(l.by) : ""}</small></li>`,
+          )
+          .join("")}</ul>
+      </section>`;
+            })
+            .join("");
+        }
+        $("list").addEventListener("click", (e) => {
+          const b = e.target.closest("button[data-a]");
+          if (!b) return;
+          try {
+            if (b.dataset.a === "ok") {
+              SW.approve(b.dataset.id, u.name);
+              SW.toast("Quotation approved. The owner will set your deadline.");
+            } else {
+              SW.requestReduction(b.dataset.id, u.name);
+              SW.toast("Price reduction request sent to the owner.");
+            }
+            render();
+          } catch (x) {
+            SW.toast(x.message, true);
+          }
+        });
+        render();
+        if (location.hash) {
+          const t = document.getElementById(location.hash.slice(1));
+          if (t) t.scrollIntoView();
+        }
+      })();
+    </script>
+  </body>
+</html>

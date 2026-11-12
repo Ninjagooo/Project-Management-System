@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Project Status · Southworks (Trinity)</title>
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body>
+    <main>
+      <header class="top">
+        <h1>Project Status</h1>
+        <span class="chip" id="who"></span>
+      </header>
+      <div id="list"></div>
+    </main>
+    <script src="js/app.js"></script>
+    <script>
+      (function () {
+        const u = SW.need("customer"),
+          $ = SW.$,
+          db = SW.db();
+        const ps = db.projects.filter((p) => p.userId === u.id).reverse();
+        const waiting = db.quotations.filter(
+          (q) => q.userId === u.id && q.status === "Approved" && !q.projectId,
+        );
+        let h = "";
+        ps.forEach((p) => {
+          const q = db.quotations.find((x) => x.id === p.quotationId),
+            idx = SW.STAGES.findIndex((s) => s[0] === p.stage),
+            done = p.status === "Completed";
+          const steps = ["Quotation approved", ...SW.STAGES.map((s) => s[0])];
+          h += `<section class="card"><div class="between"><div><h3>Project ${p.id} · ${SW.esc(SW.PRODUCTS[q.spec.product].name)}</h3>
+      <p class="muted">Quotation ${q.id} · Estimated completion: ${SW.fdate(p.deadline)}</p></div><span class="chip ${done ? "ok" : ""}">${p.status}</span></div>
+      <ol class="steps">${steps.map((s, i) => `<li class="${i <= idx ? "done" : ""}${i === idx + 1 && !done ? "now" : ""}">${s}</li>`).join("")}</ol>
+      <div class="bar" role="progressbar" aria-valuenow="${p.progress}" aria-valuemin="0" aria-valuemax="100"><i style="width:${p.progress}%"></i></div>
+      <small class="muted">${p.progress}% · Last update: ${SW.fdate(p.updates[p.updates.length - 1].d)}</small>
+      <h4>Updates</h4><ul class="tl">${p.updates
+        .slice()
+        .reverse()
+        .map(
+          (x) =>
+            `<li><b>${SW.esc(x.stage)}</b> · ${x.progress}%${x.remarks ? " — " + SW.esc(x.remarks) : ""}<small>${SW.fdate(x.d)} · ${SW.esc(x.by)}</small></li>`,
+        )
+        .join("")}</ul></section>`;
+        });
+        waiting.forEach((q) => {
+          h += `<section class="card"><div class="between"><div><h3>Quotation ${q.id} · approved</h3><p class="muted">${SW.esc(SW.specText(q.spec))}</p></div><span class="chip warn">Awaiting schedule</span></div><p class="muted">The owner will set your deadline and create the project record.</p></section>`;
+        });
+        $("list").innerHTML =
+          h ||
+          '<section class="card empty"><h3>No projects yet</h3><p>Your project appears here once you approve a quotation and the owner schedules it.</p><a class="btn" href="quotation.html">View my quotations</a></section>';
+      })();
+    </script>
+  </body>
+</html>

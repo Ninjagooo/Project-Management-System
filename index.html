@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login · Southworks (Trinity)</title>
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body class="auth">
+    <form class="card auth-card" id="f" novalidate>
+      <div class="brand">
+        <span class="logo">S</span>
+        <div>
+          <b>SOUTHWORKS</b><small>Trinity · Glass &amp; Aluminum</small>
+        </div>
+      </div>
+      <h2>Welcome back</h2>
+      <p class="muted">Log in as a customer or staff member.</p>
+      <label
+        >Email<input
+          type="email"
+          id="email"
+          placeholder="you@email.com"
+          autocomplete="username"
+          required
+      /></label>
+      <label
+        >Password<input
+          type="password"
+          id="pw"
+          placeholder="••••••••"
+          autocomplete="current-password"
+          required
+      /></label>
+      <p class="err" id="err" role="alert"></p>
+      <button class="btn" type="submit">Log in</button>
+      <p class="muted c">
+        No account yet? <a href="register.html">Register</a>
+      </p>
+      <div class="demo">
+        <p class="muted">
+          Demo accounts (password: <b>demo123</b>) — tap to fill:
+        </p>
+        <div class="actions">
+          <button type="button" class="btn ghost sm" data-e="juan@email.com">
+            Customer
+          </button>
+          <button
+            type="button"
+            class="btn ghost sm"
+            data-e="employee@southworks.ph"
+          >
+            Employee
+          </button>
+          <button
+            type="button"
+            class="btn ghost sm"
+            data-e="owner@southworks.ph"
+          >
+            Owner
+          </button>
+        </div>
+      </div>
+    </form>
+    <script src="js/app.js"></script>
+    <script>
+      (function () {
+        const $ = SW.$,
+          u = SW.user();
+        if (u) {
+          location.replace(SW.home(u.role));
+          return;
+        }
+        document.querySelectorAll("[data-e]").forEach(
+          (b) =>
+            (b.onclick = () => {
+              $("email").value = b.dataset.e;
+              $("pw").value = "demo123";
+              $("err").textContent = "";
+            }),
+        );
+        $("f").onsubmit = (e) => {
+          e.preventDefault();
+          const m = SW.login($("email").value, $("pw").value);
+          if (!m) {
+            $("err").textContent = "Incorrect email or password.";
+            return;
+          }
+          SW.setSession(m.id);
+          location.href = SW.home(m.role);
+        };
+      })();
+    </script>
+  </body>
+</html>
